@@ -1,0 +1,70 @@
+{
+  "entities": {
+    "UserProfile": {
+      "collection": "users",
+      "fields": {
+        "id": { "type": "string", "description": "User unique identifier matching auth UID" },
+        "name": { "type": "string", "description": "Display name of the user" },
+        "email": { "type": "string", "description": "User email address" },
+        "role": { "type": "string", "description": "Role: member, premium, advisor, admin" },
+        "avatarInitials": { "type": "string", "description": "User initials for avatar" },
+        "joinedDate": { "type": "string", "description": "Date user registered (ISO)" },
+        "preferredCurrency": { "type": "string", "description": "Preferred base currency code e.g. QAR, SAR, USD" },
+        "isFreeTrialActive": { "type": "boolean", "description": "Whether 60-day VIP trial is active" },
+        "trialStartDate": { "type": "string", "description": "Start date of trial" },
+        "trialEndDate": { "type": "string", "description": "End date of trial" },
+        "trialDaysRemaining": { "type": "number", "description": "Remaining trial days" },
+        "complimentaryConsultations": { "type": "number", "description": "Free consultation tokens" },
+        "updatedAt": { "type": "string", "description": "Last updated timestamp" }
+      }
+    },
+    "UserFinanceData": {
+      "collection": "user_finance_data",
+      "fields": {
+        "userId": { "type": "string", "description": "Owner user UID" },
+        "period": { "type": "object", "description": "Current active budget period configuration" },
+        "income": { "type": "array", "description": "List of income source items" },
+        "categories": { "type": "array", "description": "List of expense categories and nested budget items" },
+        "transactions": { "type": "array", "description": "Full transaction ledger records" },
+        "journalEntries": { "type": "array", "description": "Double-entry accounting journal entries" },
+        "balanceSheet": { "type": "object", "description": "Assets and liabilities balance sheet items" },
+        "consultations": { "type": "array", "description": "User booked consultations" },
+        "lastSyncedAt": { "type": "string", "description": "ISO timestamp of last cloud synchronization" }
+      }
+    },
+    "Transaction": {
+      "collection": "transactions",
+      "fields": {
+        "id": { "type": "string", "description": "Transaction unique identifier" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "date": { "type": "string", "description": "Date of transaction (YYYY-MM-DD)" },
+        "description": { "type": "string", "description": "Description of the transaction" },
+        "amount": { "type": "number", "description": "Amount in current base currency" },
+        "type": { "type": "string", "description": "expense or income" },
+        "categoryId": { "type": "string", "description": "Category ID reference" },
+        "expenseItemId": { "type": "string", "description": "Optional specific expense item ID" },
+        "incomeItemId": { "type": "string", "description": "Optional specific income item ID" },
+        "tags": { "type": "array", "description": "Optional tags" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      }
+    },
+    "ConsultationBooking": {
+      "collection": "consultation_bookings",
+      "fields": {
+        "id": { "type": "string", "description": "Booking unique ID" },
+        "userId": { "type": "string", "description": "Client user UID" },
+        "expertId": { "type": "string", "description": "Selected financial advisor ID" },
+        "expertName": { "type": "string", "description": "Financial advisor display name" },
+        "userName": { "type": "string", "description": "Client name" },
+        "userEmail": { "type": "string", "description": "Client email" },
+        "date": { "type": "string", "description": "Appointment date" },
+        "timeSlot": { "type": "string", "description": "Appointment time slot" },
+        "topic": { "type": "string", "description": "Consultation topic/agenda" },
+        "status": { "type": "string", "description": "confirmed, pending, completed, cancelled" },
+        "fee": { "type": "number", "description": "Consultation fee" },
+        "currencyCode": { "type": "string", "description": "Currency code" },
+        "createdAt": { "type": "string", "description": "Booking creation date" }
+      }
+    }
+  }
+}

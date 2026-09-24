@@ -1,0 +1,6 @@
+{
+  "name": "Money Manager: Life",
+  "description": "Comprehensive Money Manager Life app featuring multi-wallet management, daily transaction journal with built-in calculator keypad, visual budget limits, savings goals, debts tracker, expense pie charts, calendar view, and cloud synchronization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
