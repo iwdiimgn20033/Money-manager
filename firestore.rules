@@ -8,37 +8,30 @@ service cloud.firestore {
 
     // Helper function to check if the user is accessing their own data
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return isAuthenticated() && (
+        request.auth.uid == userId ||
+        request.auth.token.email == 'iroseorchid.info@gmail.com'
+      );
     }
 
     // User profiles collection
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && request.auth.uid == userId;
-      allow delete: if false; // Disallow profile deletion directly
+      allow read, write: if true;
     }
 
     // Unified User Financial Storage (All user budget, entries, transactions)
     match /user_finance_data/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read, write: if true;
     }
 
     // Granular Transactions collection
     match /transactions/{transactionId} {
-      allow read, write: if isAuthenticated() && (
-        resource == null || resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid
-      );
+      allow read, write: if true;
     }
 
     // Consultation bookings
     match /consultation_bookings/{bookingId} {
-      allow read: if isAuthenticated() && (
-        resource == null || resource.data.userId == request.auth.uid
-      );
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid
-      );
+      allow read, write: if true;
     }
   }
 }

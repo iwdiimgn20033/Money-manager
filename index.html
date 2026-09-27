@@ -10,6 +10,26 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     
+    <!-- OAuth Popup Handler for iframe compatibility -->
+    <script>
+      (function() {
+        try {
+          if (window.opener && (window.location.hash.includes('access_token=') || window.location.search.includes('code='))) {
+            window.opener.postMessage({ 
+              type: 'OAUTH_AUTH_SUCCESS', 
+              hash: window.location.hash, 
+              search: window.location.search 
+            }, '*');
+            setTimeout(function() {
+              window.close();
+            }, 300);
+          }
+        } catch (e) {
+          // ignore
+        }
+      })();
+    </script>
+
     <!-- High-Performance Typography: Cairo for Arabic & Plus Jakarta Sans for Latin + JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

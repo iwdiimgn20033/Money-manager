@@ -18,7 +18,8 @@ import {
   Sparkles,
   ArrowRight,
   RefreshCw,
-  Sliders
+  Sliders,
+  Database
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -27,6 +28,7 @@ interface AdminDashboardProps {
   currentCurrency: CurrencyInfo;
   onUpdateBookingStatus: (id: string, status: ConsultationBooking['status']) => void;
   onDeleteBooking: (id: string) => void;
+  onOpenSupabaseConfig?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -35,6 +37,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   currentCurrency,
   onUpdateBookingStatus,
   onDeleteBooking,
+  onOpenSupabaseConfig,
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,7 +87,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {onOpenSupabaseConfig && (
+              <button
+                type="button"
+                onClick={onOpenSupabaseConfig}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/40 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              >
+                <Database className="w-3.5 h-3.5" />
+                <span>{isAr ? 'ضبط إعدادات Supabase السحابية' : 'Configure Supabase Cloud'}</span>
+              </button>
+            )}
             <span className="px-3 py-1.5 bg-slate-800 border border-slate-700 text-xs font-mono text-emerald-400 flex items-center gap-1.5">
               <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
               <span>{isAr ? 'نظام الحجز مباشر' : 'Live Booking Webhook Active'}</span>

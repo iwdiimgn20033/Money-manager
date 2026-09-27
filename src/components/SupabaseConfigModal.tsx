@@ -155,18 +155,18 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
         {/* Header */}
         <div className="text-center pb-3 border-b border-slate-800">
           <div className="w-12 h-12 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-2xl flex items-center justify-center mx-auto mb-2 text-base shadow-xs">
-            <Database className="w-6 h-6 text-emerald-400" />
+            <ShieldCheck className="w-6 h-6 text-emerald-400" />
           </div>
           <h2 className="text-lg sm:text-xl font-black text-white flex items-center justify-center gap-2">
-            <span>{isAr ? 'ربط تسجيل الدخول مع Supabase' : 'Connect Supabase & GitHub Auth'}</span>
-            <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {isSupabaseConfigured() ? (isAr ? 'متصل 🟢' : 'Active') : (isAr ? 'جاهز للربط' : 'Ready')}
+            <span>{isAr ? 'ضبط إعدادات Supabase (خاص بمدير الموقع)' : 'Supabase Admin Settings (Admin Only)'}</span>
+            <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              {isAr ? 'خاص بالمدير 🛡️' : 'Admin Only 🛡️'}
             </span>
           </h2>
           <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
             {isAr 
-              ? 'تفعيل تسجيل الدخول بواسطة GitHub وقاعدة بيانات Supabase السحابية لإدارة الحسابات والمزامنة'
-              : 'Enable GitHub & Supabase cloud authentication for user accounts and data persistence'}
+              ? 'لوحة ضبط وتوصيل مشروع Supabase الخاص بك ومفاتيح الربط وتوثيق GitHub لمشروعك السحابي.'
+              : 'Configure and connect your Supabase project credentials and GitHub OAuth integration.'}
           </p>
         </div>
 

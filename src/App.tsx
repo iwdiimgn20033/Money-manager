@@ -44,7 +44,7 @@ import { Download, Plus, Wallet, Sparkles, Headphones, ShieldCheck, Scale, FileT
 import { auth, saveCloudFinanceData, subscribeToCloudFinanceData, logoutFirebase, getIsQuotaExceeded } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { savePostgresFinanceData, syncUserToPostgres, getPostgresFinanceData } from './lib/api';
-import { onSupabaseAuthStateChange, signOutFromSupabase } from './lib/supabase';
+import { onSupabaseAuthStateChange, signOutFromSupabase, getCurrentSupabaseUser } from './lib/supabase';
 import { SupabaseConfigModal } from './components/SupabaseConfigModal';
 
 const INITIAL_BOOKINGS: ConsultationBooking[] = [];
@@ -292,10 +292,11 @@ export default function App() {
       }
     });
 
-    // Listen to Supabase Auth state (including GitHub OAuth redirect callback)
+    // Listen to Supabase Auth state (including GitHub OAuth redirect callback or email link)
     const unsubscribeSupabase = onSupabaseAuthStateChange((sbProfile) => {
       if (sbProfile && !currentUser) {
         setCurrentUser(sbProfile);
+        setIsAuthModalOpen(false);
         localStorage.setItem('fg_user', JSON.stringify(sbProfile));
         syncUserToPostgres({
           name: sbProfile.name,
@@ -305,9 +306,23 @@ export default function App() {
       }
     });
 
+    // Listen to popup OAuth callback messages
+    const handleOauthMessage = async (event: MessageEvent) => {
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        const sbUser = await getCurrentSupabaseUser();
+        if (sbUser) {
+          setCurrentUser(sbUser);
+          setIsAuthModalOpen(false);
+          localStorage.setItem('fg_user', JSON.stringify(sbUser));
+        }
+      }
+    };
+    window.addEventListener('message', handleOauthMessage);
+
     return () => {
       unsubscribeAuth();
       unsubscribeSupabase();
+      window.removeEventListener('message', handleOauthMessage);
     };
   }, []);
 
@@ -480,10 +495,17 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Modals state
+  // Modals state - Automatically show login upon entering the website if not authenticated
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => {
+    try {
+      const saved = localStorage.getItem('fg_user');
+      return !saved;
+    } catch {
+      return true;
+    }
+  });
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
   const [isReportsModalOpen, setIsReportsModalOpen] = useState(false);
@@ -1120,6 +1142,7 @@ export default function App() {
             currentCurrency={currentCurrency}
             onUpdateBookingStatus={handleUpdateBookingStatus}
             onDeleteBooking={handleDeleteBooking}
+            onOpenSupabaseConfig={() => setIsSupabaseConfigOpen(true)}
           />
         )}
 
