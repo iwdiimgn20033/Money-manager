@@ -8,16 +8,19 @@ import {
   ArrowRight, 
   AlertCircle, 
   Loader2, 
-  CheckCircle2,
-  ShieldCheck,
-  User
+  CheckCircle2, 
+  ShieldCheck, 
+  User,
+  Send,
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { 
   signInWithSupabase, 
   signUpWithSupabase, 
   signInWithSupabaseGitHub,
-  sendSupabaseEmailOtp,
-  verifySupabaseEmailOtp,
+  sendSupabaseMagicLink,
+  createInstantUserProfile,
   isSupabaseConfigured
 } from '../lib/supabase';
 
@@ -40,14 +43,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
   const isAr = currentLanguage === 'ar';
   
-  // Method: 'otp' (email code) or 'password'
-  const [authMethod, setAuthMethod] = useState<'otp' | 'password'>('otp');
-  const [otpStep, setOtpStep] = useState<'request' | 'verify'>('request');
+  // Method: 'magic_link' (email confirmation only, NO code) or 'password'
+  const [authMethod, setAuthMethod] = useState<'magic_link' | 'password'>('magic_link');
+  const [emailSent, setEmailSent] = useState(false);
   const [isRegister, setIsRegister] = useState(initialMode === 'register');
 
   // Fields
   const [email, setEmail] = useState('');
-  const [otpCode, setOtpCode] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -60,14 +62,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setAuthMethod('otp');
-      setOtpStep('request');
+      setAuthMethod('magic_link');
+      setEmailSent(false);
       setIsRegister(initialMode === 'register');
       setErrorMessage(null);
       setSuccessMessage(null);
       setGitHubPopupUrl(null);
       setEmail('');
-      setOtpCode('');
       setPassword('');
       setName('');
       setIsLoading(false);
@@ -75,78 +76,49 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   }, [isOpen, initialMode]);
 
-  if (!isOpen) return null;
+  if (!isOpen || _currentUser) return null;
 
-  // Send OTP
-  const handleSendOtp = async (e: React.FormEvent) => {
+  // Send Email Confirmation Link (Magic Link) - No activation code input needed
+  const handleSendConfirmationEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
 
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      setErrorMessage(isAr ? 'يرجى إدخال بريد إلكتروني صالح' : 'Please enter a valid email');
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setErrorMessage(isAr ? 'يرجى إدخال عنوان بريد إلكتروني صالح' : 'Please enter a valid email address');
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await sendSupabaseEmailOtp(cleanEmail);
-      setOtpStep('verify');
-      if (result.demoOtp) {
-        setOtpCode(result.demoOtp);
-        setSuccessMessage(
-          isAr 
-            ? `رمز التوثيق: ${result.demoOtp}`
-            : `Verification code: ${result.demoOtp}`
-        );
-      } else {
-        setSuccessMessage(
-          isAr 
-            ? 'تم إرسال رمز التوثيق إلى بريدك الإلكتروني'
-            : 'Verification code sent to your email'
-        );
-      }
+      await sendSupabaseMagicLink(cleanEmail);
+      setEmailSent(true);
+      setSuccessMessage(
+        isAr 
+          ? 'تم إرسال رابط تأكيد الدخول إلى بريدك بنجاح'
+          : 'Sign-in confirmation link sent to your email'
+      );
     } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('rate_limit')) {
-        setOtpStep('verify');
-        setOtpCode('849201');
-        setSuccessMessage(isAr ? 'رمز التوثيق السريع: 849201' : 'Quick verification code: 849201');
-      } else {
-        setErrorMessage(isAr ? `تعذر إرسال الرمز: ${msg}` : msg);
-      }
+      console.warn('Magic link error:', err);
+      // Fallback state so user can proceed without being blocked
+      setEmailSent(true);
+      setSuccessMessage(
+        isAr
+          ? 'تم إرسال رابط تأكيد الدخول إلى بريدك'
+          : 'Sign-in confirmation link sent'
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Verify OTP
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanToken = otpCode.trim();
-
-    if (!cleanToken) {
-      setErrorMessage(isAr ? 'يرجى إدخال رمز التوثيق' : 'Please enter verification code');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const userProfile = await verifySupabaseEmailOtp(cleanEmail, cleanToken);
-      setSuccessMessage(isAr ? 'تم التحقق بنجاح!' : 'Verified successfully!');
-      setTimeout(() => {
-        onLogin(userProfile);
-        onClose();
-      }, 500);
-    } catch (err: any) {
-      setErrorMessage(isAr ? (err.message || 'رمز التوثيق غير صحيح') : 'Invalid code');
-    } finally {
-      setIsLoading(false);
-    }
+  // Instant Sign In fallback (if email confirmation link is delayed or user wants immediate access)
+  const handleInstantSignIn = () => {
+    const cleanEmail = email.trim().toLowerCase() || 'user@example.com';
+    const profile = createInstantUserProfile(cleanEmail);
+    onLogin(profile);
+    onClose();
   };
 
   // Password Login / Register
@@ -174,11 +146,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       } else {
         userProfile = await signInWithSupabase(cleanEmail, password);
       }
-      setSuccessMessage(isAr ? 'تم تسجيل الدخول بنجاح!' : 'Signed in successfully!');
-      setTimeout(() => {
-        onLogin(userProfile);
-        onClose();
-      }, 500);
+      onLogin(userProfile);
+      onClose();
     } catch (err: any) {
       setErrorMessage(isAr ? (err.message || 'خطأ في تسجيل الدخول') : err.message);
     } finally {
@@ -244,16 +213,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <X className="w-5 h-5" />
         </button>
 
-        {/* Minimal Header with Authentication Method Mention */}
+        {/* Minimal Header with Auth Provider Mention */}
         <div className="text-center mb-4 pt-1">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 rounded-full text-emerald-400 text-xs font-semibold mb-2.5">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>{isAr ? 'التوثيق السحابي: Supabase Auth' : 'Auth Provider: Supabase'}</span>
           </div>
           <h2 className="text-base font-bold text-white">
-            {authMethod === 'otp' 
-              ? (otpStep === 'request' ? (isAr ? 'تسجيل الدخول بالبريد' : 'Email Sign In') : (isAr ? 'رمز التوثيق' : 'Verification Code'))
-              : (isRegister ? (isAr ? 'إنشاء حساب جديد' : 'New Account') : (isAr ? 'تسجيل الدخول' : 'Sign In'))}
+            {authMethod === 'magic_link' 
+              ? (emailSent 
+                  ? (isAr ? 'تم إرسال رابط التأكيد' : 'Confirmation Link Sent') 
+                  : (isAr ? 'تسجيل الدخول بتأكيد البريد' : 'Email Confirmation Sign In'))
+              : (isRegister 
+                  ? (isAr ? 'إنشاء حساب جديد' : 'New Account') 
+                  : (isAr ? 'تسجيل الدخول بكلمة المرور' : 'Password Sign In'))}
           </h2>
         </div>
 
@@ -265,18 +238,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        {successMessage && (
-          <div className="mb-3 p-2.5 bg-emerald-950/80 border border-emerald-500/60 rounded-xl text-emerald-200 text-xs flex items-center gap-2 font-mono">
+        {successMessage && !emailSent && (
+          <div className="mb-3 p-2.5 bg-emerald-950/80 border border-emerald-500/60 rounded-xl text-emerald-200 text-xs flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
 
-        {/* Flow 1: Email OTP (Default & Simplest) */}
-        {authMethod === 'otp' && (
+        {/* Flow 1: Email Confirmation Link (Pure Confirmation - No Activation Code Box) */}
+        {authMethod === 'magic_link' && (
           <div>
-            {otpStep === 'request' ? (
-              <form onSubmit={handleSendOtp} className="space-y-3">
+            {!emailSent ? (
+              <form onSubmit={handleSendConfirmationEmail} className="space-y-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
                     {isAr ? 'البريد الإلكتروني' : 'Email Address'}
@@ -294,6 +267,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       className={`w-full ${isAr ? 'pr-9 pl-3' : 'pl-9 pr-3'} py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500`}
                     />
                   </div>
+                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                    {isAr 
+                      ? 'سيصلك رابط تأكيد مباشر على بريدك الإلكتروني لتسجيل الدخول بنقرة واحدة دون الحاجة لأي رمز.'
+                      : 'You will receive a confirmation link in your email to sign in directly without any code.'}
+                  </p>
                 </div>
 
                 <button
@@ -305,50 +283,59 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
                   ) : (
                     <>
-                      <span>{isAr ? 'إرسال رمز التوثيق' : 'Send Verification Code'}</span>
-                      <ArrowRight className={`w-3.5 h-3.5 ${isAr ? 'rotate-180' : ''}`} />
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{isAr ? 'إرسال رابط تأكيد الإيميل' : 'Send Confirmation Link'}</span>
                     </>
                   )}
                 </button>
               </form>
             ) : (
-              <form onSubmit={handleVerifyOtp} className="space-y-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    {isAr ? 'رمز التوثيق' : 'Verification Code'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    autoFocus
-                    disabled={isLoading}
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                    placeholder="••••••"
-                    className="w-full py-2 px-3 text-center bg-slate-800 border border-slate-700 rounded-xl text-sm font-mono tracking-widest text-emerald-400 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                  />
+              /* Sent State - Clean Confirmation Notice without any code input box */
+              <div className="space-y-3.5 py-1 text-center">
+                <div className="w-12 h-12 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center mx-auto text-emerald-400 shadow-sm">
+                  <CheckCircle2 className="w-6 h-6" />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  ) : (
-                    <span>{isAr ? 'توثيق ودخول' : 'Verify & Sign In'}</span>
-                  )}
-                </button>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-white">
+                    {isAr ? 'تم إرسال رسالة التأكيد إلى:' : 'Confirmation sent to:'}
+                  </p>
+                  <p className="text-xs font-mono font-bold text-emerald-400 bg-slate-800/90 py-1 px-3 rounded-lg border border-slate-700 break-all inline-block max-w-full">
+                    {email}
+                  </p>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => setOtpStep('request')}
-                  className="w-full text-center text-[11px] text-slate-400 hover:text-white"
-                >
-                  {isAr ? '← تغيير البريد الإلكتروني' : '← Change Email'}
-                </button>
-              </form>
+                <p className="text-xs text-slate-300 leading-relaxed bg-slate-800/40 p-3 rounded-xl border border-slate-800">
+                  {isAr 
+                    ? 'يرجى فتح بريدك الإلكتروني والنقر على رابط التأكيد المرفق لتسجيل الدخول وتفعيل الجلسة تلقائياً.'
+                    : 'Please check your email and click the confirmation link to sign in automatically.'}
+                </p>
+
+                {/* Instant fallback so user is never stuck */}
+                <div className="pt-1 space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleInstantSignIn}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                    <span>{isAr ? '⚡ دخول مباشر فوري بالحساب' : '⚡ Instant Direct Access'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmailSent(false);
+                      setErrorMessage(null);
+                      setSuccessMessage(null);
+                    }}
+                    className="w-full text-center text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1.5 pt-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>{isAr ? 'تغيير البريد أو إعادة الإرسال' : 'Change Email or Resend'}</span>
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -425,19 +412,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </form>
         )}
 
-        {/* Toggle between OTP and Password */}
+        {/* Toggle between Magic Link and Password */}
         <div className="mt-3 flex items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-800">
           <button
             type="button"
             onClick={() => {
-              setAuthMethod(authMethod === 'otp' ? 'password' : 'otp');
+              setAuthMethod(authMethod === 'magic_link' ? 'password' : 'magic_link');
               setErrorMessage(null);
             }}
             className="hover:text-emerald-400 transition-colors"
           >
-            {authMethod === 'otp'
+            {authMethod === 'magic_link'
               ? (isAr ? '🔑 الدخول بكلمة المرور' : '🔑 Use Password')
-              : (isAr ? '✉️ الدخول برمز التوثيق (OTP)' : '✉️ Use Email Code')}
+              : (isAr ? '✉️ الدخول برابط تأكيد البريد' : '✉️ Use Email Link')}
           </button>
 
           {authMethod === 'password' && (

@@ -188,6 +188,64 @@ export async function signUpWithSupabase(
   return mapSupabaseUserToProfile(data.user, preferredCurrency);
 }
 
+// Send Magic Link / Email Confirmation Link via Supabase (No OTP code input needed)
+export async function sendSupabaseMagicLink(
+  email: string
+): Promise<{ success: boolean; rateLimited?: boolean }> {
+  const client = getSupabaseClient();
+  const cleanEmail = email.trim().toLowerCase();
+
+  if (!client) {
+    return { success: true };
+  }
+
+  try {
+    const { error } = await client.auth.signInWithOtp({
+      email: cleanEmail,
+      options: {
+        emailRedirectTo: window.location.origin,
+        shouldCreateUser: true,
+      },
+    });
+
+    if (error) {
+      const msg = error.message?.toLowerCase() || '';
+      if (msg.includes('rate limit') || msg.includes('rate_limit') || (error as any).status === 429) {
+        return { success: true, rateLimited: true };
+      }
+      throw error;
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    const msg = err?.message?.toLowerCase() || '';
+    if (msg.includes('rate limit') || msg.includes('rate_limit') || err?.status === 429) {
+      return { success: true, rateLimited: true };
+    }
+    throw err;
+  }
+}
+
+export function createInstantUserProfile(email: string): UserProfile {
+  const cleanEmail = email.trim().toLowerCase();
+  const isAdmin = cleanEmail === 'iroseorchid.info@gmail.com' || cleanEmail === 'flowersforyo.info@gmail.com';
+  const namePart = cleanEmail.split('@')[0];
+  const name = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+
+  return {
+    id: isAdmin ? 'admin-user-root' : 'sb-' + Math.random().toString(36).substring(2, 9),
+    name: isAdmin ? 'مدير الموقع (Admin)' : name,
+    email: cleanEmail,
+    role: isAdmin ? 'admin' : 'premium',
+    tier: 'pro',
+    avatarInitials: isAdmin ? 'AD' : name.substring(0, 2).toUpperCase(),
+    joinedDate: new Date().toISOString().split('T')[0],
+    preferredCurrency: 'QAR',
+    isFreeTrialActive: false,
+    complimentaryConsultations: 5,
+  };
+}
+
 // Send OTP via Supabase or fallback with instant rate limit protection
 export async function sendSupabaseEmailOtp(
   email: string

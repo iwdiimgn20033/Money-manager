@@ -284,6 +284,8 @@ export default function App() {
           complimentaryConsultations: 5,
         };
         setCurrentUser(profile);
+        setIsAuthModalOpen(false);
+        localStorage.setItem('fg_user', JSON.stringify(profile));
         syncUserToPostgres({
           name: profile.name,
           avatarInitials: profile.avatarInitials,
@@ -518,6 +520,9 @@ export default function App() {
 
   // User-scoped login handler to prevent cross-account record leakage
   const handleUserLogin = (user: UserProfile) => {
+    setIsAuthModalOpen(false);
+    localStorage.setItem('fg_user', JSON.stringify(user));
+
     const currentKey = currentUser ? `fg_data_${currentUser.id}` : 'fg_data_guest';
     localStorage.setItem(
       currentKey,
@@ -1282,7 +1287,7 @@ export default function App() {
 
       {/* User Auth Modal (Register & Login) */}
       <AuthModal
-        isOpen={isAuthModalOpen}
+        isOpen={isAuthModalOpen && !currentUser}
         onClose={() => setIsAuthModalOpen(false)}
         currentUser={currentUser}
         initialMode={authModalMode}
