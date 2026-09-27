@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActiveTab, UserProfile } from '../types';
+import { ActiveTab, UserProfile, AppMode } from '../types';
 import { LanguageCode, TRANSLATIONS } from '../i18n/translations';
 import { 
   BarChart3, 
@@ -19,7 +19,9 @@ import {
   Headphones,
   Wallet,
   Plus,
-  Settings
+  Settings,
+  User,
+  Building2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,6 +29,8 @@ interface SidebarProps {
   setActiveTab: (tab: ActiveTab) => void;
   currentLanguage: LanguageCode;
   currentUser: UserProfile | null;
+  appMode: AppMode;
+  onSelectAppMode: (mode: AppMode) => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   isCollapsed: boolean;
@@ -41,6 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveTab,
   currentLanguage,
   currentUser,
+  appMode,
+  onSelectAppMode,
   isOpenMobile,
   onCloseMobile,
   isCollapsed,
@@ -66,9 +72,64 @@ export const Sidebar: React.FC<SidebarProps> = ({
     items: NavItem[];
   }
 
-  const navGroups: NavGroup[] = [
+  // 1. INDIVIDUALS MODE (أفراد): فقط الإدخال والموازنة والفروقات من دون التعقيدات المحاسبية والقيود
+  const personalNavGroups: NavGroup[] = [
     {
-      groupTitle: isAr ? 'الرئيسية والتحليل' : 'Main & Analytics',
+      groupTitle: isAr ? 'الرئيسية والفروقات' : 'Overview & Variances',
+      items: [
+        {
+          id: 'overview',
+          label: isAr ? 'ملخص الفروقات والسيولة' : 'Variance & Cash Summary',
+          description: isAr ? 'مؤشرات الأداء والفروقات' : 'Daily burn, actual vs budget',
+          icon: BarChart3,
+        },
+        {
+          id: 'breakdown',
+          label: isAr ? 'الموازنة ومقارنة الفروقات' : 'Budget vs Actual Variance',
+          description: isAr ? 'مقارنة المخطط بالفعلي' : 'Line-by-line comparison',
+          icon: PieChart,
+        },
+      ],
+    },
+    {
+      groupTitle: isAr ? 'الإدخال المالي المباشر' : 'Financial Entry',
+      items: [
+        {
+          id: 'transactions',
+          label: isAr ? 'إدخال وتدوين المعاملات' : 'Log Transactions',
+          description: isAr ? 'تسجيل المصاريف والإيرادات السريعة' : 'Quick entry of expenses & income',
+          icon: Receipt,
+        },
+      ],
+    },
+    {
+      groupTitle: isAr ? 'التخطيط والموازنة' : 'Budgeting & Planning',
+      items: [
+        {
+          id: 'simulator',
+          label: isAr ? 'محاكي الموازنة والمدخرات' : 'Budget Simulator',
+          description: isAr ? 'تجارب سيناريوهات التوفير' : 'Savings & future projections',
+          icon: Sliders,
+        },
+      ],
+    },
+    {
+      groupTitle: isAr ? 'الإعدادات العامة' : 'Settings',
+      items: [
+        {
+          id: 'settings',
+          label: isAr ? 'الإعدادات والعملة' : 'Settings & Currency',
+          description: isAr ? 'العملة والنسخ الاحتياطي' : 'Currency & local backup',
+          icon: Settings,
+        },
+      ],
+    },
+  ];
+
+  // 2. COMPANIES MODE (شركات): النظام المحاسبي المتكامل، القيود، شجرة الحسابات، والقوائم المالية
+  const businessNavGroups: NavGroup[] = [
+    {
+      groupTitle: isAr ? 'التحليل واللوحة التنفيذية' : 'Executive Analytics',
       items: [
         {
           id: 'overview',
@@ -77,63 +138,63 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: BarChart3,
         },
         {
-          id: 'breakdown',
-          label: t.breakdown,
-          description: isAr ? 'مقارنة الإنفاق التقديري' : 'Actual vs Budget Variance',
-          icon: PieChart,
-        },
-        {
           id: 'cashflow',
           label: t.cashflow,
-          description: isAr ? 'توقعات السيولة والأرصدة' : 'Inflows & Cash Projections',
+          description: isAr ? 'توقعات السيولة والتدفقات' : 'Cash Flow Projections',
           icon: TrendingUp,
+        },
+        {
+          id: 'breakdown',
+          label: t.breakdown,
+          description: isAr ? 'مقارنة الإنفاق وانحرافات الموازنة' : 'Actual vs Budget Variance',
+          icon: PieChart,
         },
       ],
     },
     {
-      groupTitle: isAr ? 'المحاسبة والتقارير' : 'Accounting & Reports',
+      groupTitle: isAr ? 'النظام المحاسبي والقيود' : 'Accounting & Double Entry',
       items: [
         {
           id: 'accounting',
           label: isAr ? 'شجرة الحسابات والقيود' : 'COA & Double Entry',
           description: isAr ? 'دليل الحسابات وقيود اليومية' : 'General Ledger & Chart of Accounts',
           icon: BookOpen,
-          badge: currentUser?.tier === 'demo' ? 'PRO' : undefined,
+          badge: isAr ? 'محاسبي' : 'Ledger',
         },
         {
           id: 'balancesheet',
-          label: isAr ? 'الميزانية العمومية' : 'Balance Sheet',
-          description: isAr ? 'المركز المالي والأصول' : 'Assets, Liabilities & Equity',
+          label: isAr ? 'الميزانية العمومية والمركز المالي' : 'Balance Sheet',
+          description: isAr ? 'الأصول والخصوم وحقوق الملكية' : 'Assets, Liabilities & Equity',
           icon: Scale,
-          badge: currentUser?.tier === 'demo' ? 'PRO' : undefined,
+          badge: isAr ? 'قوائم' : 'Financials',
         },
         {
           id: 'reports',
-          label: isAr ? 'التقارير المالية' : 'Financial Reports',
-          description: isAr ? 'قائمة الدخل والتدفقات' : 'Standard Statements & Analysis',
+          label: isAr ? 'التقارير المالية المعتمدة' : 'Financial Reports',
+          description: isAr ? 'قوائم الدخل والتدفقات والتدقيق' : 'Standard Statements & Audit',
           icon: FileText,
-          badge: currentUser?.tier === 'demo' ? 'PRO' : (isAr ? 'معتمد' : 'Audit'),
+          badge: isAr ? 'معتمد' : 'Audit',
         },
         {
           id: 'transactions',
           label: t.transactions,
-          description: isAr ? 'دفتر العمليات المباشرة' : 'Audit Trail & Entries',
+          description: isAr ? 'دفتر العمليات ومسار التدقيق' : 'Audit Trail & Entries',
           icon: Receipt,
         },
       ],
     },
     {
-      groupTitle: isAr ? 'الأدوات والتخطيط' : 'Tools & Planning',
+      groupTitle: isAr ? 'التخطيط المؤسسي والخبراء' : 'Corporate Planning',
       items: [
         {
           id: 'simulator',
           label: t.simulator,
-          description: isAr ? 'تجارب سيناريوهات النمو' : 'Burn-rate & Forecasting',
+          description: isAr ? 'سيناريوهات النمو ومعدل الحرق' : 'Burn-rate & Forecasting',
           icon: Sliders,
         },
         {
           id: 'consultations',
-          label: isAr ? 'جدول الاستشارات' : 'Consultations',
+          label: isAr ? 'جدول الاستشارات المالية' : 'Consultations',
           description: isAr ? 'مواعيد الخبراء الماليين' : 'Client Advisor Schedule',
           icon: Calendar,
         },
@@ -158,6 +219,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
   ];
+
+  const navGroups: NavGroup[] = appMode === 'personal' ? personalNavGroups : businessNavGroups;
 
   const handleSelectTab = (id: ActiveTab) => {
     setActiveTab(id);
@@ -226,6 +289,65 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Interface Mode Switcher in Sidebar (الأفراد vs الشركات) */}
+      {!isCollapsed ? (
+        <div className="p-2.5 border-b border-slate-200/80 bg-slate-50/80 font-arabic">
+          <div className="flex items-center justify-between mb-1.5 px-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              {isAr ? 'نمط الواجهة المالي' : 'Interface Mode'}
+            </span>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+              appMode === 'personal'
+                ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+            }`}>
+              {appMode === 'personal' ? (isAr ? 'حساب أفراد' : 'Personal') : (isAr ? 'حساب شركات' : 'Business')}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => onSelectAppMode('personal')}
+              className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                appMode === 'personal'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>{isAr ? 'الأفراد' : 'Personal'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectAppMode('business')}
+              className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                appMode === 'business'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>{isAr ? 'الشركات' : 'Business'}</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="p-2 border-b border-slate-200/80 flex justify-center bg-slate-50/80">
+          <button
+            type="button"
+            onClick={() => onSelectAppMode(appMode === 'personal' ? 'business' : 'personal')}
+            className={`p-2 rounded-xl transition-all border ${
+              appMode === 'personal'
+                ? 'bg-blue-50 text-blue-600 border-blue-200'
+                : 'bg-indigo-50 text-indigo-600 border-indigo-200'
+            }`}
+            title={appMode === 'personal' ? (isAr ? 'التبديل إلى الشركات' : 'Switch to Business') : (isAr ? 'التبديل إلى الأفراد' : 'Switch to Personal')}
+          >
+            {appMode === 'personal' ? <User className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+          </button>
+        </div>
+      )}
 
       {/* Primary Log Transaction Action Button (Always Accessible in Sidebar) */}
       <div className="p-2.5 border-b border-slate-200/80 bg-slate-50/50">

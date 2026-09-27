@@ -99,6 +99,9 @@ export interface FinancialMetrics {
   budgetAdherenceScore: number;
 }
 
+// APPLICATION INTERFACE MODE: INDIVIDUALS (PERSONAL) VS COMPANIES (BUSINESS)
+export type AppMode = 'personal' | 'business';
+
 export type ActiveTab = 
   | 'overview' 
   | 'wallets'

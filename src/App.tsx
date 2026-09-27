@@ -10,7 +10,8 @@ import {
   SUPPORTED_CURRENCIES, 
   Transaction, 
   UserProfile,
-  BalanceSheetData 
+  BalanceSheetData,
+  AppMode 
 } from './types';
 import { INITIAL_EXPENSE_CATEGORIES, INITIAL_INCOME_ITEMS, INITIAL_PERIOD, INITIAL_TRANSACTIONS } from './data/initialData';
 import { calculateFinancialMetrics, exportBudgetToCSV, formatCurrency, setAppCurrency } from './utils/calculations';
@@ -40,7 +41,7 @@ import { AuthModal } from './components/AuthModal';
 import { ConsultationModal } from './components/ConsultationModal';
 import { SettingsView } from './components/SettingsView';
 import { SyncState } from './components/SyncStatusIndicator';
-import { Download, Plus, Wallet, Sparkles, Headphones, ShieldCheck, Scale, FileText, ArrowUp, MessageCircle, Cloud } from 'lucide-react';
+import { Download, Plus, Wallet, Sparkles, Headphones, ShieldCheck, Scale, FileText, ArrowUp, MessageCircle, Cloud, Building2, User } from 'lucide-react';
 import { auth, saveCloudFinanceData, subscribeToCloudFinanceData, logoutFirebase, getIsQuotaExceeded } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { savePostgresFinanceData, syncUserToPostgres, getPostgresFinanceData } from './lib/api';
@@ -500,6 +501,36 @@ export default function App() {
   // Modals state - Automatically show login upon entering the website if not authenticated
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
+
+  // Application Interface Mode: Individuals (الأفراد) vs Companies (الشركات)
+  const [appMode, setAppMode] = useState<AppMode>(() => {
+    try {
+      const saved = localStorage.getItem('fg_app_mode');
+      return (saved === 'business' || saved === 'personal') ? saved : 'personal';
+    } catch {
+      return 'personal';
+    }
+  });
+
+  const handleSelectAppMode = (mode: AppMode) => {
+    setAppMode(mode);
+    try {
+      localStorage.setItem('fg_app_mode', mode);
+    } catch {}
+
+    // When switching to personal mode, redirect away from complex accounting screens
+    if (mode === 'personal') {
+      if (
+        activeTab === 'accounting' || 
+        activeTab === 'balancesheet' || 
+        activeTab === 'reports' || 
+        activeTab === 'cashflow' || 
+        activeTab === 'consultations'
+      ) {
+        setActiveTab('overview');
+      }
+    }
+  };
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => {
     try {
       const saved = localStorage.getItem('fg_user');
@@ -994,6 +1025,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         currentLanguage={currentLanguage}
         currentUser={currentUser}
+        appMode={appMode}
+        onSelectAppMode={handleSelectAppMode}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         isCollapsed={isSidebarCollapsed}
@@ -1013,6 +1046,8 @@ export default function App() {
           currentLanguage={currentLanguage}
           onSelectLanguage={setCurrentLanguage}
           currentUser={currentUser}
+          appMode={appMode}
+          onSelectAppMode={handleSelectAppMode}
           onOpenAuthModal={handleOpenAuthModal}
           onLogout={handleUserLogout}
           onOpenConsultationModal={() => setIsConsultationModalOpen(true)}
@@ -1042,24 +1077,40 @@ export default function App() {
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 font-arabic">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/80 shadow-2xs">
-                {t.appSubtitle}
+              {/* Interface Mode Indicator Badge */}
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border shadow-2xs flex items-center gap-1.5 ${
+                appMode === 'personal'
+                  ? 'text-blue-700 bg-blue-50 border-blue-200'
+                  : 'text-indigo-700 bg-indigo-50 border-indigo-200'
+              }`}>
+                {appMode === 'personal' ? (
+                  <>
+                    <User className="w-3 h-3 text-blue-600" />
+                    <span>{isRtl ? 'واجهة الأفراد: إدخال، موازنة، وفروقات' : 'Personal Mode: Entry, Budget & Variances'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Building2 className="w-3 h-3 text-indigo-600" />
+                    <span>{isRtl ? 'واجهة الشركات: قيود، شجرة الحسابات، وقوائم مالية' : 'Business Mode: COA, Double Entry & Statements'}</span>
+                  </>
+                )}
               </span>
               <span className="text-[10px] font-bold text-slate-500 font-mono">
                 {period.label} • {period.totalDays - period.currentDay} {t.daysLeft}
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-arabic drop-shadow-xs">
-              {activeTab === 'overview' && t.overview}
-              {activeTab === 'breakdown' && t.breakdown}
+              {activeTab === 'overview' && (appMode === 'personal' ? (isRtl ? 'ملخص الفروقات والسيولة' : 'Variance & Cash Summary') : t.overview)}
+              {activeTab === 'breakdown' && (appMode === 'personal' ? (isRtl ? 'الموازنة ومقارنة الفروقات' : 'Budget vs Actual Variance') : t.breakdown)}
               {activeTab === 'accounting' && (isRtl ? 'شجرة الحسابات والدورة المحاسبية المزدوجة' : 'Chart of Accounts & Double-Entry Ledger')}
               {activeTab === 'balancesheet' && (isRtl ? 'الميزانية العمومية والمركز المالي' : 'Balance Sheet & Financial Position')}
               {activeTab === 'reports' && (isRtl ? 'مركز التقارير المالية ومقارنة الفترات' : 'Financial Reports & Period Analysis')}
               {activeTab === 'cashflow' && t.cashflow}
-              {activeTab === 'transactions' && t.transactions}
+              {activeTab === 'transactions' && (appMode === 'personal' ? (isRtl ? 'إدخال وتدوين المعاملات' : 'Log Transactions') : t.transactions)}
               {activeTab === 'consultations' && (isRtl ? 'جدول الاستشارات والمواعيد المالية' : 'Consultations Schedule & Client Bookings')}
-              {activeTab === 'simulator' && t.simulator}
+              {activeTab === 'simulator' && (appMode === 'personal' ? (isRtl ? 'محاكي الموازنة وتخطيط الادخار' : 'Budget & Savings Simulator') : t.simulator)}
               {activeTab === 'admin' && (isRtl ? 'لوحة تحكم المدير - المواعيد والاستشارات' : 'Admin Control Panel')}
+              {activeTab === 'settings' && (isRtl ? 'الإعدادات وتفضيلات العملة' : 'Settings & Currency')}
             </h1>
           </div>
 
@@ -1129,8 +1180,44 @@ export default function App() {
           </div>
         )}
 
-        {/* 3. BALANCE SHEET VIEW (الميزانية العمومية: الأصول، المطلوبات، وصافي رأس المال) */}
-        {activeTab === 'balancesheet' && (
+        {/* Guard for Business-Only Tabs in Personal Mode */}
+        {appMode === 'personal' && (activeTab === 'accounting' || activeTab === 'balancesheet' || activeTab === 'reports' || activeTab === 'cashflow') && (
+          <div className="bg-white rounded-2xl border border-indigo-200 p-8 text-center max-w-xl mx-auto shadow-sm my-8 font-arabic space-y-4">
+            <div className="w-14 h-14 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center justify-center mx-auto text-indigo-600">
+              <Building2 className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5">
+              <h2 className="text-lg font-bold text-slate-900">
+                {isRtl ? 'هذا القسم خاص بواجهة الشركات' : 'This section is for Business Mode'}
+              </h2>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
+                {isRtl 
+                  ? 'تم تصميم واجهة الأفراد لتقتصر على الإدخال السريع، الموازنة التقديرية، وتحليل الفروقات دون تعقيدات محاسبية. للوصول إلى القيود المزدوجة، شجرة الحسابات، والقوائم المالية يرجى التبديل لواجهة الشركات.'
+                  : 'Personal mode is streamlined for entry, budget & variances. To access double entry journals, chart of accounts and financial statements, switch to Business mode.'}
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => handleSelectAppMode('business')}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Building2 className="w-4 h-4" />
+                <span>{isRtl ? 'التبديل إلى واجهة الشركات' : 'Switch to Business Mode'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('overview')}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                {isRtl ? 'العودة للرئيسية' : 'Back to Overview'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 3. BALANCE SHEET VIEW (الميزانية العمومية: الأصول، المطلوبات، وصافي رأس المال - خاصة بالشركات) */}
+        {activeTab === 'balancesheet' && appMode === 'business' && (
           <BalanceSheetView
             currentLanguage={currentLanguage}
             currentCurrency={currentCurrency}
@@ -1151,8 +1238,8 @@ export default function App() {
           />
         )}
 
-        {/* 5. REPORTS & FINANCIAL DASHBOARD WITH CIRCLE OF EXPENSES */}
-        {activeTab === 'reports' && (
+        {/* 5. REPORTS & FINANCIAL DASHBOARD (القوائم المالية والتقارير المحاسبية - خاصة بالشركات) */}
+        {activeTab === 'reports' && appMode === 'business' && (
           <FinancialReportsDashboard
             period={period}
             incomeItems={incomeItems}
@@ -1165,8 +1252,8 @@ export default function App() {
           />
         )}
 
-        {/* 6. CASH FLOW PROJECTIONS */}
-        {activeTab === 'cashflow' && (
+        {/* 6. CASH FLOW PROJECTIONS (توقعات التدفقات النقدية والسيولة - خاصة بالشركات) */}
+        {activeTab === 'cashflow' && appMode === 'business' && (
           <CashFlowProjections
             metrics={metrics}
             period={period}
@@ -1178,7 +1265,7 @@ export default function App() {
           />
         )}
 
-        {/* 7. TRANSACTIONS LEDGER */}
+        {/* 7. TRANSACTIONS LEDGER (متاح في الواجهتين: تسجيل المعاملات والمصاريف والإيرادات) */}
         {activeTab === 'transactions' && (
           <TransactionLedger
             transactions={transactions}
@@ -1190,8 +1277,8 @@ export default function App() {
           />
         )}
 
-        {/* 8. ACCOUNTING CYCLE & CHART OF ACCOUNTS VIEW */}
-        {activeTab === 'accounting' && (
+        {/* 8. ACCOUNTING CYCLE & CHART OF ACCOUNTS VIEW (شجرة الحسابات والقيود المزدوجة - خاصة بالشركات) */}
+        {activeTab === 'accounting' && appMode === 'business' && (
           <AccountingCycleView
             period={period}
             transactions={transactions}

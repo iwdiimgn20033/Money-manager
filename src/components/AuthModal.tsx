@@ -12,7 +12,6 @@ import {
   ShieldCheck, 
   User,
   Send,
-  Sparkles,
   RefreshCw
 } from 'lucide-react';
 import { 
@@ -20,7 +19,6 @@ import {
   signUpWithSupabase, 
   signInWithSupabaseGitHub,
   sendSupabaseMagicLink,
-  createInstantUserProfile,
   isSupabaseConfigured
 } from '../lib/supabase';
 
@@ -111,14 +109,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Instant Sign In fallback (if email confirmation link is delayed or user wants immediate access)
-  const handleInstantSignIn = () => {
-    const cleanEmail = email.trim().toLowerCase() || 'user@example.com';
-    const profile = createInstantUserProfile(cleanEmail);
-    onLogin(profile);
-    onClose();
   };
 
   // Password Login / Register
@@ -311,17 +301,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     : 'Please check your email and click the confirmation link to sign in automatically.'}
                 </p>
 
-                {/* Instant fallback so user is never stuck */}
-                <div className="pt-1 space-y-2">
-                  <button
-                    type="button"
-                    onClick={handleInstantSignIn}
-                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-                    <span>{isAr ? '⚡ دخول مباشر فوري بالحساب' : '⚡ Instant Direct Access'}</span>
-                  </button>
-
+                {/* Actions */}
+                <div className="pt-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -329,10 +310,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       setErrorMessage(null);
                       setSuccessMessage(null);
                     }}
-                    className="w-full text-center text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1.5 pt-1"
+                    className="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-slate-700"
                   >
-                    <RefreshCw className="w-3 h-3" />
-                    <span>{isAr ? 'تغيير البريد أو إعادة الإرسال' : 'Change Email or Resend'}</span>
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>{isAr ? 'تغيير البريد الإلكتروني أو إعادة الإرسال' : 'Change Email or Resend'}</span>
                   </button>
                 </div>
               </div>

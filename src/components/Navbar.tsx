@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BudgetPeriod, CurrencyInfo, SUPPORTED_CURRENCIES, UserProfile } from '../types';
+import { BudgetPeriod, CurrencyInfo, SUPPORTED_CURRENCIES, UserProfile, AppMode } from '../types';
 import { LanguageCode, SUPPORTED_LANGUAGES, TRANSLATIONS } from '../i18n/translations';
 import { SyncStatusIndicator, SyncState } from './SyncStatusIndicator';
 import { 
@@ -10,6 +10,7 @@ import {
   Search,
   Headphones,
   User,
+  Building2,
   LogOut,
   Sparkles,
   RotateCcw,
@@ -31,6 +32,8 @@ interface NavbarProps {
   currentLanguage: LanguageCode;
   onSelectLanguage: (lang: LanguageCode) => void;
   currentUser: UserProfile | null;
+  appMode: AppMode;
+  onSelectAppMode: (mode: AppMode) => void;
   onOpenAuthModal: (mode?: 'login' | 'register') => void;
   onLogout: () => void;
   onOpenConsultationModal: () => void;
@@ -61,6 +64,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentLanguage,
   onSelectLanguage,
   currentUser,
+  appMode,
+  onSelectAppMode,
   onOpenAuthModal,
   onLogout,
   onOpenConsultationModal,
@@ -168,6 +173,36 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Side: Tools & Selectors (Zero horizontal scroll across Mobile, Tablet, Desktop) */}
           <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-2 shrink-0">
+            {/* PROMINENT MODE SWITCHER: INDIVIDUALS (أفراد) vs COMPANIES (شركات) */}
+            <div className="flex items-center bg-slate-100 p-0.5 sm:p-1 rounded-xl border border-slate-200/90 shadow-2xs shrink-0">
+              <button
+                type="button"
+                onClick={() => onSelectAppMode('personal')}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer font-arabic ${
+                  appMode === 'personal'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+                title={isAr ? 'واجهة الأفراد: إدخال، موازنة، وفروقات فقط' : 'Personal Mode: Entry, Budget & Variances'}
+              >
+                <User className="w-3.5 h-3.5 shrink-0" strokeWidth={appMode === 'personal' ? 2.5 : 1.75} />
+                <span className="text-[11px] sm:text-xs">{isAr ? 'الأفراد' : 'Personal'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectAppMode('business')}
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer font-arabic ${
+                  appMode === 'business'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                }`}
+                title={isAr ? 'واجهة الشركات: شجرة الحسابات، القيود المحاسبية، والقوائم المالية' : 'Business Mode: COA, Double Entry & Statements'}
+              >
+                <Building2 className="w-3.5 h-3.5 shrink-0" strokeWidth={appMode === 'business' ? 2.5 : 1.75} />
+                <span className="text-[11px] sm:text-xs">{isAr ? 'الشركات' : 'Business'}</span>
+              </button>
+            </div>
+
             {/* Internal Server Sync & Data Persistence (Visible for admin) */}
             {currentUser?.role === 'admin' && (
               <div className="shrink-0">
