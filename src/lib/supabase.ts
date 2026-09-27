@@ -5,7 +5,8 @@ const STORAGE_KEY_URL = 'supabase_project_url';
 const STORAGE_KEY_ANON = 'supabase_anon_key';
 
 // Default project or environment variables
-const ENV_URL = ((import.meta as any).env?.VITE_SUPABASE_URL as string) || '';
+const DEFAULT_PROJECT_URL = 'https://yvybginudnkrgeqixixs.supabase.co';
+const ENV_URL = ((import.meta as any).env?.VITE_SUPABASE_URL as string) || DEFAULT_PROJECT_URL;
 const ENV_ANON = ((import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string) || '';
 
 export function getSupabaseCredentials(): { url: string; anonKey: string } {

@@ -354,25 +354,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => onOpenAuthModal('register')}
-                    className="flex items-center gap-1 px-2 py-1 sm:py-1.5 bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 hover:from-amber-600 hover:to-amber-700 border border-amber-400/40 rounded-xl text-[11px] sm:text-xs font-black text-slate-950 transition-all shadow-xs whitespace-nowrap font-arabic backdrop-blur-md"
-                    title={isAr ? 'تسجيل حساب احترافي مجاني' : 'Register Free Pro Account'}
-                  >
-                    <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-slate-950" />
-                    <span className="inline font-black text-[11px] sm:text-xs">
-                      {isAr ? 'تسجيل Pro مجاني' : 'Register Free Pro'}
-                    </span>
-                  </button>
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => onOpenAuthModal('login')}
-                    className="hidden sm:flex items-center gap-1 px-2 py-1 sm:py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-xl text-[11px] sm:text-xs font-bold text-slate-700 transition-all whitespace-nowrap font-arabic backdrop-blur-md"
-                    title={isAr ? 'تسجيل الدخول' : 'Sign In'}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/80 rounded-xl text-[11px] sm:text-xs font-bold transition-all shadow-xs whitespace-nowrap font-arabic cursor-pointer"
+                    title={isAr ? 'تسجيل الدخول مع Supabase' : 'Sign In with Supabase'}
                   >
-                    <LogIn className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-blue-600" strokeWidth={1.75} />
-                    <span className="inline font-bold text-[11px] sm:text-xs">
-                      {isAr ? 'دخول' : 'Sign In'}
+                    <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
+                      <path 
+                        d="M13.35 2.15a1 1 0 0 0-1.7 0L2.3 16.55a1 1 0 0 0 .85 1.55h8.85l-.5 4.5a1 1 0 0 0 1.7 0l9.35-14.4a1 1 0 0 0-.85-1.55h-8.85l.45-4.5z" 
+                        fill="currentColor"
+                      />
+                    </svg>
+                    <span>{isAr ? 'تسجيل الدخول' : 'Sign In'}</span>
+                    <span className="hidden sm:inline-block text-[10px] bg-emerald-700/60 px-1.5 py-0.2 rounded text-emerald-100 font-mono">
+                      Supabase
                     </span>
                   </button>
                 </div>

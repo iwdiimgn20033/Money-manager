@@ -30,6 +30,7 @@ import {
   Database,
   RefreshCw,
   LogOut,
+  LogIn,
   UserPlus,
   GitBranch,
   ExternalLink
@@ -872,11 +873,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
-            onClick={() => onOpenAuthModal('register')}
-            className="flex-1 sm:flex-none px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+            onClick={() => onOpenAuthModal(currentUser ? 'register' : 'login')}
+            className="flex-1 sm:flex-none px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
           >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>{isAr ? 'تسجيل حساب جديد' : 'New User'}</span>
+            <LogIn className="w-3.5 h-3.5" />
+            <span>{currentUser ? (isAr ? 'تبديل الحساب (Supabase)' : 'Switch Account') : (isAr ? 'تسجيل الدخول (Supabase)' : 'Sign In with Supabase')}</span>
           </button>
 
           {currentUser && (
